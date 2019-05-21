@@ -1,0 +1,117 @@
+apiVersion: apps/v1beta2
+kind: StatefulSet
+metadata:
+  labels:
+    app: redis
+    release: redis
+  name: redis-master
+spec:
+  selector:
+    matchLabels:
+      app: redis
+      release: redis
+      role: master
+  serviceName: redis-headless
+  template:
+    metadata:
+      annotations:
+        checksum/configmap: a78b123620a68484b9ff51884bd86e6dd9e372ed0137a7c413045c41a0b72292
+        checksum/health: 82851b341caa5ef4d19b4169514ceb0de0a6ed20f72950f07660aa7f44c97714
+        checksum/secret: a055efbfea682d08bc1384533485b9ad99d7bb8a0b51ecd9006d750c5adad35e
+      labels:
+        app: redis
+        chart: redis-8.0.1
+        release: redis
+        role: master
+    spec:
+      containers:
+      - command:
+        - /bin/bash
+        - -c
+        - "if [[ -n $REDIS_PASSWORD_FILE ]]; then\n  password_aux=`cat ${REDIS_PASSWORD_FILE}`\n
+          \ export REDIS_PASSWORD=$password_aux\nfi\nif [[ ! -f /opt/bitnami/redis/etc/master.conf
+          ]];then\n  cp /opt/bitnami/redis/mounted-etc/master.conf /opt/bitnami/redis/etc/master.conf\nfi\nif
+          [[ ! -f /opt/bitnami/redis/etc/redis.conf ]];then\n  cp /opt/bitnami/redis/mounted-etc/redis.conf
+          /opt/bitnami/redis/etc/redis.conf\nfi          \nARGS=(\"--port\" \"${REDIS_PORT}\")\nARGS+=(\"--requirepass\"
+          \"${REDIS_PASSWORD}\")\nARGS+=(\"--include\" \"/opt/bitnami/redis/etc/redis.conf\")\nARGS+=(\"--include\"
+          \"/opt/bitnami/redis/etc/master.conf\")\n/run.sh ${ARGS[@]}\n"
+        env:
+        - name: REDIS_REPLICATION_MODE
+          value: master
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: redis-password
+              name: redis
+        - name: REDIS_PORT
+          value: "6379"
+        image: docker.io/bitnami/redis:5.0.5
+        imagePullPolicy: Always
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - /health/ping_local.sh 5
+          failureThreshold: 5
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: redis
+        ports:
+        - containerPort: 6379
+          name: redis
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - /health/ping_local.sh 5
+          failureThreshold: 5
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources: null
+        securityContext:
+          runAsUser: 1001
+        volumeMounts:
+        - mountPath: /health
+          name: health
+        - mountPath: /data
+          name: redis-data
+          subPath: null
+        - mountPath: /opt/bitnami/redis/mounted-etc
+          name: config
+        - mountPath: /opt/bitnami/redis/etc/
+          name: redis-tmp-conf
+      securityContext:
+        fsGroup: 1001
+      serviceAccountName: default
+      volumes:
+      - configMap:
+          defaultMode: 493
+          name: redis-health
+        name: health
+      - configMap:
+          name: redis
+        name: config
+      - emptyDir: {}
+        name: redis-tmp-conf
+  updateStrategy:
+    type: RollingUpdate
+  volumeClaimTemplates:
+  - metadata:
+      labels:
+        app: redis
+        component: master
+        heritage: Tiller
+        release: redis
+      name: redis-data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 8Gi
