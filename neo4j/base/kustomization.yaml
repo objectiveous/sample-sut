@@ -1,0 +1,4 @@
+resources:
+- dns.yaml
+- statefulset.yaml
+- deployment.yaml
