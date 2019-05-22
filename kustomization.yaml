@@ -1,5 +1,6 @@
 bases:
-  - ./redis-graph/base
   - ./common/base
+  - ./redis-graph/base
+  - ./neo4j/base
 
 namespace: demo
