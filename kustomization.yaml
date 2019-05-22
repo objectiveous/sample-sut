@@ -1,6 +1,5 @@
 bases:
-  - ./hello/bases
-  - ./redis/base
+  - ./redis-graph/base
+  - ./common/base
 
-
-namespace: icloud
+namespace: demo
