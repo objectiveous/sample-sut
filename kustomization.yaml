@@ -3,4 +3,3 @@ bases:
   - ./redis-graph/base
   - ./neo4j/base
 
-namespace: demo

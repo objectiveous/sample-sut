@@ -1,18 +1,27 @@
-# Testbed Definition for Demo 
+# Testbed Definition
+
+# Installation
+
+Fire up minikube: 
 
 ```console
-minikube start --memory=8192 --cpus=4 --kubernetes-version=v1.14.0 --vm-driver=hyperkit \
+minikube start --memory=8192 --cpus=4 --kubernetes-version=v1.14.1 --vm-driver=hyperkit \
                --bootstrapper=kubeadm --insecure-registry='docker.apple.com' \
                --extra-config=apiserver.enable-admission-plugins="LimitRanger,NamespaceExists,NamespaceLifecycle,ResourceQuota,ServiceAccount,DefaultStorageClass,MutatingAdmissionWebhook"
 ```
 
+Create a namespace to run our SUT in: 
 
-# Install the Testbed definition
+```console 
 
-First, we'll install redis-graph and neo4j into our cluster using kubectl and [kustomize](https://kustomize.io). 
+kc create namespace $NAMESPACE  
+
+```
+
+Install the SUT into our namespace using kustomize to process our yaml:
 
 ```console
- kubectl apply --kustomize .
+ kubectl apply --kustomize . -n $NAMESPACE    
 ```
 
 # Redis Graph 
@@ -50,11 +59,11 @@ GRAPH.QUERY MotoGP "MATCH (r:Rider)-[:rides]->(t:Team) WHERE t.name = 'Yamaha' R
 
 ```console 
 
-kubectl port-forward neo4j-core-0 8474:7474 8687:7687
+kubectl port-forward neo4j-core-0 8474:7474 8687:7687 -n $NAMESPACE
 
 ```
 
-Visit the UI [http://localhost:8474/](http://localhost:8474/) and connect using ```:server connect```. When 
+Visit the UI [http://localhost:8474](http://localhost:8474) and connect using ```:server connect```. When 
 prompted for a connection string use ```bolt://localhost:8687```. No credentials are required. 
 
 
